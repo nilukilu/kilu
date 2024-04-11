@@ -1,0 +1,46 @@
+import requests
+import json
+
+# Azure AD App Registration details
+tenant_id = 'YOUR_TENANT_ID'
+client_id = 'YOUR_CLIENT_ID'
+client_secret = 'YOUR_CLIENT_SECRET'
+
+# Dynamics 365 CRM details
+crm_url = 'YOUR_CRM_URL'
+api_version = '9.2'
+
+# Construct URL for token endpoint
+token_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
+
+# Prepare data for token request
+token_data = {
+    'client_id': client_id,
+    'client_secret': client_secret,
+    'grant_type': 'client_credentials',
+    'scope': f'{crm_url}/.default'
+}
+
+# Request token from Azure AD
+token_response = requests.post(token_url, data=token_data)
+token_json = token_response.json()
+access_token = token_json['access_token']
+
+# Construct headers for API request
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json'
+}
+
+# Specify fields to fetch
+fields = 'name,telephone1,emailaddress1'
+
+# Example API request to get accounts data from CRM with specified fields
+crm_api_endpoint = f'{crm_url}/api/data/v{api_version}/accounts?$select={fields}'
+response = requests.get(crm_api_endpoint, headers=headers)
+
+if response.status_code == 200:
+    accounts_data = response.json()
+    print(json.dumps(accounts_data, indent=4))
+else:
+    print(f"Failed to fetch data. Status code: {response.status_code}, Error: {response.text}")
